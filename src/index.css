@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,450;0,9..144,600;1,9..144,450&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #1C1410;
+  --color-ink-2: #241B15;
+  --color-ink-3: #2E221A;
+  --color-salt-pink: #E8A9A0;
+  --color-rose-deep: #C97B72;
+  --color-cream: #EDE3D6;
+  --color-amber: #E8935C;
+  --color-stone: #9C8C7E;
+  --font-serif: "Fraunces", Georgia, serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+/* Custom fade scroll reveals */
+.reveal-in {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: all 0.9s cubic-bezier(.16,.8,.24,1);
+}
+
+.reveal-out {
+  opacity: 0;
+  transform: translateY(20px) scale(0.98);
+  transition: all 0.9s cubic-bezier(.16,.8,.24,1);
+}
+
+@keyframes border-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.pink-shiny-border {
+  background: linear-gradient(90deg, #E8A9A0, #C97B72, #EDE3D6, #E8935C, #E8A9A0);
+  background-size: 300% 300%;
+  animation: border-shimmer 5s ease infinite;
+}
+

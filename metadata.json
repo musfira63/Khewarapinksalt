@@ -1,0 +1,6 @@
+{
+  "name": "Khewara Pink Salt",
+  "description": "Hand-mined pink salt from the ancient Khewra Salt Range. Distinctive sections and price lists for Local (Pakistan), International (Export), and Internal (Wholesale/B2B) trade partners.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
