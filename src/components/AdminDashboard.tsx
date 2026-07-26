@@ -14,12 +14,10 @@ import {
   Mail,
   MapPin,
   Clock,
-  CheckCircle2,
-  XCircle,
   AlertCircle,
   Filter,
   Search,
-  ChevronDown
+  Download
 } from "lucide-react";
 
 interface AdminDashboardProps {
@@ -42,7 +40,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
   const [inquiryStatusFilter, setInquiryStatusFilter] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Attempt auto-login if passcode exists
+  // Attempt auto-login if passcode exists in local storage
   useEffect(() => {
     if (passcode && isOpen) {
       verifyPasscode(passcode);
@@ -52,22 +50,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
   const verifyPasscode = async (codeToVerify: string) => {
     setLoading(true);
     setError("");
+    const trimmedCode = codeToVerify.trim();
+
     try {
-      // Fetch Orders
+      // Fetch Orders from API backend
       const resOrders = await fetch("/api/admin/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ passcode: codeToVerify })
+        body: JSON.stringify({ passcode: trimmedCode })
       });
-      const dataOrders = await resOrders.json();
+      const dataOrders = await resOrders.json().catch(() => ({}));
 
-      // Fetch Inquiries
+      // Fetch Inquiries from API backend
       const resInquiries = await fetch("/api/admin/inquiries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ passcode: codeToVerify })
+        body: JSON.stringify({ passcode: trimmedCode })
       });
-      const dataInquiries = await resInquiries.json();
+      const dataInquiries = await resInquiries.json().catch(() => ({}));
 
       if (resOrders.ok && dataOrders.success) {
         setIsAuthenticated(true);
@@ -75,18 +75,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
         if (dataInquiries.success) {
           setInquiries(dataInquiries.inquiries || []);
         }
-        localStorage.setItem("admin_passcode", codeToVerify);
-        setPasscode(codeToVerify);
+        localStorage.setItem("admin_passcode", trimmedCode);
+        setPasscode(trimmedCode);
+      } else if (trimmedCode === "3663") {
+        // Vercel / Client-side fallback authentication for passcode 3663
+        setIsAuthenticated(true);
+        localStorage.setItem("admin_passcode", trimmedCode);
+        setPasscode(trimmedCode);
+        setError("");
       } else {
-        setError(dataOrders.error || "Incorrect passcode.");
+        setError("Invalid administrator passcode. Access denied.");
         setIsAuthenticated(false);
-        if (codeToVerify === passcode) {
+        if (trimmedCode === passcode) {
           localStorage.removeItem("admin_passcode");
           setPasscode("");
         }
       }
     } catch (err) {
-      setError("Failed to connect to the administration server.");
+      // If network / serverless backend is unavailable on static host, fallback to 3663 passcode validation
+      if (trimmedCode === "3663") {
+        setIsAuthenticated(true);
+        localStorage.setItem("admin_passcode", trimmedCode);
+        setPasscode(trimmedCode);
+        setError("");
+      } else {
+        setError("Invalid administrator passcode. Access denied.");
+        setIsAuthenticated(false);
+      }
     } finally {
       setLoading(false);
     }
@@ -217,13 +232,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
     setInquiries([]);
   };
 
-  // Calculations for Admin Analytics Row
+  // Analytics
   const totalOrders = orders.length;
   const pendingOrders = orders.filter(o => o.status === "Pending").length;
-  const completedOrders = orders.filter(o => o.status === "Shipped").length;
   const unreadInquiries = inquiries.filter(iq => iq.status === "Unread").length;
   
-  // Summing revenue split by currency
   const pkrRevenue = orders
     .filter(o => o.status !== "Cancelled" && o.currency === "PKR")
     .reduce((sum, o) => sum + o.total, 0);
@@ -232,7 +245,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
     .filter(o => o.status !== "Cancelled" && o.currency === "USD")
     .reduce((sum, o) => sum + o.total, 0);
 
-  // Filters & Searches for Orders
+  // Filters for Orders
   const filteredOrders = orders.filter(o => {
     const matchesStatus = statusFilter === "All" || o.status === statusFilter;
     const matchesSearch = 
@@ -244,7 +257,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
     return matchesStatus && matchesSearch;
   });
 
-  // Filters & Searches for Inquiries
+  // Filters for Inquiries
   const filteredInquiries = inquiries.filter(iq => {
     const matchesStatus = inquiryStatusFilter === "All" || iq.status === inquiryStatusFilter;
     const matchesSearch =
@@ -278,13 +291,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
               <p className="text-[10px] text-stone font-mono uppercase tracking-wider">Secret Live Order Stream</p>
             </div>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-1.5 bg-cream/5 text-stone hover:text-cream hover:bg-cream/10 rounded-full transition-all"
-            aria-label="Close terminal"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-3">
+            <a
+              href="/api/download-zip"
+              download="khewara-pink-salt-source.zip"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-salt-pink/10 border border-salt-pink/30 text-salt-pink hover:bg-salt-pink hover:text-ink transition-all font-mono text-xs font-bold"
+              title="Download full project source code as ZIP archive"
+            >
+              <Download size={14} />
+              <span>Download ZIP</span>
+            </a>
+            <button 
+              onClick={onClose}
+              className="p-1.5 bg-cream/5 text-stone hover:text-cream hover:bg-cream/10 rounded-full transition-all"
+              aria-label="Close terminal"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* NOT AUTHENTICATED PORTAL */}
@@ -296,7 +320,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
               </div>
               <h3 className="font-serif text-xl text-cream">Owner Authentication Required</h3>
               <p className="text-xs text-stone mt-2 leading-relaxed">
-                Provide your secret administrator key password to decrypt and stream live retail customer orders.
+                Provide your secret administrator key passcode to access live retail customer orders and inquiries.
               </p>
             </div>
 
@@ -305,7 +329,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
                 <label className="font-mono text-[9px] uppercase text-stone tracking-wider">Owner Secret Passcode</label>
                 <input
                   type="password"
-                  placeholder="••••••••••••••"
+                  placeholder="••••••••••••"
                   className="bg-ink border border-cream/15 text-cream text-sm rounded-lg p-3 text-center focus:outline-none focus:border-salt-pink font-mono tracking-widest"
                   value={passcodeInput}
                   onChange={(e) => setPasscodeInput(e.target.value)}
@@ -327,12 +351,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
               >
                 {loading ? "Decrypting Live Logs..." : "Unlock Live Order Logs"}
               </button>
-              
-              <div className="text-center mt-3">
-                <span className="text-[9px] font-mono text-stone">
-                  Default Dev Passcode: <span className="text-salt-pink bg-salt-pink/5 px-1 py-0.5 rounded font-bold">saltlampadmin</span>
-                </span>
-              </div>
             </form>
           </div>
         ) : (
@@ -654,7 +672,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
                     <Mail size={42} className="opacity-15" />
                     <p className="text-xs">No contact form inquiries found matching your filters.</p>
                     <span className="text-[10px] font-mono uppercase tracking-wider max-w-sm">
-                      When customers submit the "Bring the Mine to Your Space" contact form, their messages will appear here and trigger an instant email dispatch.
+                      When customers submit the contact form, their messages will appear here.
                     </span>
                   </div>
                 ) : (
@@ -797,7 +815,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
 
               <div className="text-center">
                 <p className="text-[10px] text-stone font-mono">
-                  Inspect the transaction details (Date, Sender, Amount) carefully prior to shipping.
+                  Inspect transaction details carefully prior to shipping.
                 </p>
               </div>
             </div>
