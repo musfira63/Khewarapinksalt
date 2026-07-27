@@ -588,12 +588,24 @@ export const OrderForm: React.FC = () => {
               )}
             </div>
 
-            <button 
-              onClick={() => setOrderReceipt(null)}
-              className="w-full mt-6 py-2.5 bg-salt-pink text-ink font-mono text-[10px] uppercase tracking-wider font-semibold rounded hover:bg-cream transition-colors"
-            >
-              Order Another Item
-            </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
+              <button 
+                onClick={() => setOrderReceipt(null)}
+                className="w-full py-2.5 bg-salt-pink/20 border border-salt-pink/50 text-salt-pink font-mono text-[10px] uppercase tracking-wider font-semibold rounded hover:bg-salt-pink hover:text-ink transition-colors"
+              >
+                Order Another Item
+              </button>
+              <button 
+                onClick={() => {
+                  setIsAdminOpen(true);
+                  window.dispatchEvent(new Event("khewara_open_admin"));
+                }}
+                className="w-full py-2.5 bg-salt-pink text-ink font-mono text-[10px] uppercase tracking-wider font-extrabold rounded hover:bg-cream transition-colors flex items-center justify-center gap-1.5 shadow-lg"
+              >
+                <Lock size={12} />
+                <span>Open Admin Portal</span>
+              </button>
+            </div>
           </motion.div>
         ) : (
           /* PRIMARY CHECKOUT WIDGET */
